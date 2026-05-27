@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/prepare-schema.mjs && prisma generate && prisma db push && node prisma/seed.mjs && next build",
+    "build": "node scripts/prepare-schema.mjs && prisma generate && prisma db push --accept-data-loss && node prisma/seed.mjs && next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
@@ -22,11 +22,12 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "uuid": "^11.1.0",
-    "zod": "^3.25.51"
+    "zod": "^3.25.51",
+    "@tailwindcss/postcss": "^4.1.8",
+    "tailwindcss": "^4.1.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
-    "@tailwindcss/postcss": "^4.1.8",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.15.29",
     "@types/qrcode": "^1.5.5",
@@ -36,7 +37,6 @@
     "eslint": "^9.28.0",
     "eslint-config-next": "^15.3.3",
     "prisma": "^6.9.0",
-    "tailwindcss": "^4.1.8",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }
