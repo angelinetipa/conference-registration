@@ -1,4 +1,4 @@
 #!/bin/bash
-cd "$(dirname "$0")"
-chmod +x start.sh
-./start.sh
+cd /Users/shu/conference-registration
+chmod +x run-website.sh
+exec ./run-website.sh
