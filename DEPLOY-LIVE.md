@@ -1,61 +1,57 @@
-# Put your website online (free)
+# Deploy live website (Neon + Vercel)
 
-**Live stack:** [Neon](https://neon.tech) database + [Vercel](https://vercel.com) hosting  
-**Your repo:** https://github.com/zeuswae/conference-registration
+**Repo:** https://github.com/zeuswae/conference-registration
 
----
+## Fastest — one double-click
 
-## Fastest path (~10 minutes)
+1. In Neon: **Dashboard → Connect → Prisma** — copy the connection string.
+2. Save it as `.neon.env` in the project folder:
 
-### 1. Create free database (Neon)
+   ```bash
+   echo 'DATABASE_URL="postgresql://YOUR_STRING_HERE"' > /Users/shu/conference-registration/.neon.env
+   ```
 
-1. Open **https://console.neon.tech** → sign in (GitHub is fine).
-2. **New Project** → name: `conference-registration` → Create.
-3. On the project dashboard, copy **Connection string** → **Prisma**.
-   - Example: `postgresql://neondb_owner:xxxx@ep-xxxx.us-east-2.aws.neon.tech/neondb?sslmode=require`
+3. Double-click **`DEPLOY LIVE`** on your Desktop.
 
-### 2. Deploy on Vercel
+   - Signs in to GitHub + Vercel if needed (browser opens).
+   - Pushes code to GitHub.
+   - Deploys to Vercel with your Neon database.
+   - Prints your **live URL** (e.g. `https://conference-registration.vercel.app`).
 
-1. Open **https://vercel.com/new**
-2. **Import** `zeuswae/conference-registration` from GitHub.
-3. Before clicking Deploy, open **Environment Variables** and add:
-
-| Name | Value |
-|------|--------|
-| `DATABASE_URL` | *(paste Neon connection string)* |
-| `AUTH_SECRET` | Run in Terminal: `openssl rand -base64 32` |
-| `NEXT_PUBLIC_APP_URL` | `https://YOUR-PROJECT.vercel.app` *(update after first deploy if URL differs)* |
-
-4. Click **Deploy** (wait ~2–3 min).
-
-5. After deploy, copy your real URL (e.g. `https://conference-registration-xxx.vercel.app`).
-   - Go to **Settings → Environment Variables** → edit `NEXT_PUBLIC_APP_URL` to that URL → **Redeploy**.
-
-### 3. Done
-
-Your public link is the Vercel URL. Share it with users.
-
-**Admin login:** `admin@conference.local` / `admin12345`  
-*(Change these in production via Neon SQL or add a new admin user.)*
-
----
-
-## One-command deploy (Terminal)
-
-If you have a Neon connection string ready:
+## Or — Terminal
 
 ```bash
 cd /Users/shu/conference-registration
-chmod +x scripts/deploy-production.sh
-./scripts/deploy-production.sh
+chmod +x scripts/deploy-now.sh
+./scripts/deploy-now.sh
 ```
 
----
+Paste your Neon connection string when asked.
 
-## Troubleshooting
+## Manual (if script fails)
 
-| Problem | Fix |
-|---------|-----|
-| Build fails on Prisma | Ensure `DATABASE_URL` uses `?sslmode=require` |
-| Login works locally but not online | Set `NEXT_PUBLIC_APP_URL` to exact Vercel URL and redeploy |
-| Empty events list | Redeploy once — seed runs on build |
+### 1. Push to GitHub
+
+```bash
+cd /Users/shu/conference-registration
+gh auth login
+git push origin main
+```
+
+### 2. Vercel
+
+1. https://vercel.com/new → Sign in with GitHub  
+2. Import **zeuswae/conference-registration**  
+3. Environment variables:
+
+| Name | Value |
+|------|--------|
+| `DATABASE_URL` | Neon Prisma connection string |
+| `AUTH_SECRET` | `openssl rand -base64 32` |
+| `NEXT_PUBLIC_APP_URL` | Your Vercel URL (set after first deploy, then redeploy) |
+
+4. **Deploy**
+
+### Login on live site
+
+- `admin@conference.local` / `admin12345`
