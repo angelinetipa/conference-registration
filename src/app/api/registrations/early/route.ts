@@ -9,8 +9,8 @@ const schema = z.object({
   eventId: z.string(),
   attendeeName: z.string().min(2),
   attendeeEmail: z.string().email(),
-  organization: z.string().optional(),
-  paperTitle: z.string().optional(),
+  organization: z.string().max(150).optional(),
+  paperTitle: z.string().max(255).optional(),
 });
 
 export async function POST(req: Request) {

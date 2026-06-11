@@ -231,6 +231,20 @@ export function EventRegistrationForms({ events }: { events: Event[] }) {
   );
 }
 
+const FIELD_MAX: Record<string, number> = {
+  attendeeName: 100,
+  attendeeEmail: 150,
+  organization: 150,
+  paperTitle: 255,
+  transactionNo: 50,
+  paymentFor: 100,
+  payeeName: 100,
+};
+
+const FIELD_MIN: Record<string, number> = {
+  amount: 1,
+};
+
 function Field({
   name,
   label,
@@ -256,6 +270,9 @@ function Field({
         className="input-field"
         required={required}
         defaultValue={defaultValue}
+        maxLength={FIELD_MAX[name]}
+        min={type === "number" ? FIELD_MIN[name] : undefined}
+        step={type === "number" ? "0.01" : undefined}
       />
     </div>
   );
