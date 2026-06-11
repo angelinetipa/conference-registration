@@ -6,8 +6,8 @@ const schema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   name: z.string().min(2),
-  organization: z.string().optional(),
-  phone: z.string().optional(),
+  organization: z.string().max(150).optional(),
+  phone: z.string().max(13).regex(/^(09|\+639|639)\d{9}$/, "Invalid phone number format").optional(),
 });
 
 export async function POST(req: Request) {

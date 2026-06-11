@@ -38,25 +38,51 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isError, setIsError] = useState(false); // Track error states separate from success banners
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setMessage("");
+    setIsError(false);
+
     const fd = new FormData(e.currentTarget);
-    const res = await fetch("/api/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(Object.fromEntries(fd)),
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (!res.ok) {
-      setMessage(data.error ?? "Profile update failed.");
-      return;
+    const phone = fd.get("phone") as string;
+
+    // FIX: Verify phone formatting before requesting an API dispatch
+    if (phone) {
+      // Validates standard PH patterns: 09XXXXXXXXX, +639XXXXXXXXX, or 639XXXXXXXXX
+      const phPhoneRegex = /^(09|\+639|639)\d{9}$/;
+      if (!phPhoneRegex.test(phone.replace(/\s+/g, ""))) {
+        setMessage("Invalid phone number format. Please use 09XXXXXXXXX or +639XXXXXXXXX.");
+        setIsError(true);
+        setLoading(false);
+        return;
+      }
     }
-    setMessage("Profile updated successfully.");
-    router.refresh();
+
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(fd)),
+      });
+      const data = await res.json();
+      setLoading(false);
+      
+      if (!res.ok) {
+        setMessage(data.error ?? "Profile update failed.");
+        setIsError(true);
+        return;
+      }
+      
+      setMessage("Profile updated successfully.");
+      router.refresh();
+    } catch (err) {
+      setMessage("Something went wrong. Please try again.");
+      setIsError(true);
+      setLoading(false);
+    }
   }
 
   const selectedCountry = countries.find((country) => country.code === user.country) ?? countries[0];
@@ -80,7 +106,11 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
 
       <form onSubmit={submit} className="grid gap-5 p-6">
         {message && (
-          <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm font-bold text-indigo-800">
+          <div className={`rounded-2xl border p-4 text-sm font-bold ${
+            isError 
+              ? "border-red-100 bg-red-50 text-red-800" 
+              : "border-indigo-100 bg-indigo-50 text-indigo-800"
+          }`}>
             {message}
           </div>
         )}
@@ -90,7 +120,14 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
             <label className="label" htmlFor="name">
               Name
             </label>
-            <input id="name" name="name" className="input-field" defaultValue={user.name} required />
+            <input 
+              id="name" 
+              name="name" 
+              className="input-field" 
+              defaultValue={user.name} 
+              required 
+              maxLength={100} // FIX: Prevent database text-bloat
+            />
           </div>
           <div>
             <label className="label" htmlFor="email">
@@ -102,13 +139,26 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
             <label className="label" htmlFor="organization">
               Organization
             </label>
-            <input id="organization" name="organization" className="input-field" defaultValue={user.organization ?? ""} />
+            <input 
+              id="organization" 
+              name="organization" 
+              className="input-field" 
+              defaultValue={user.organization ?? ""} 
+              maxLength={150} // FIX: Prevent database text-bloat
+            />
           </div>
           <div>
             <label className="label" htmlFor="phone">
               Phone
             </label>
-            <input id="phone" name="phone" className="input-field" defaultValue={user.phone ?? ""} />
+            <input 
+              id="phone" 
+              name="phone" 
+              className="input-field" 
+              defaultValue={user.phone ?? ""} 
+              maxLength={13} // FIX: Restrict input overflow length (+639XXXXXXXXX is 13 chars)
+              placeholder="09171234567"
+            />
           </div>
         </div>
 

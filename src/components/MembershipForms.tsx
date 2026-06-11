@@ -56,12 +56,23 @@ export function MembershipForms({
     setApplyLoading(true);
     setMessage("");
     setIsError(false);
+    
     const fd = new FormData(e.currentTarget);
+    const orgNameValue = fd.get("orgName") as string;
+
+    // FIX: Client side dynamic validation ensuring institutional profiles supply a name
+    if (needsOrg && (!orgNameValue || !orgNameValue.trim())) {
+      setIsError(true);
+      setMessage("Organization Name is strictly required for Institutional memberships.");
+      setApplyLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/membership/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, orgName: fd.get("orgName") || undefined }),
+        body: JSON.stringify({ type, orgName: orgNameValue?.trim() || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -111,10 +122,10 @@ export function MembershipForms({
           membershipId,
           method: fd.get("method"),
           transactionDate: fd.get("transactionDate"),
-          transactionNo: fd.get("transactionNo"),
+          transactionNo: (fd.get("transactionNo") as string).trim(),
           amount: Number(fd.get("amount")),
-          paymentFor: fd.get("paymentFor"),
-          payeeName: fd.get("payeeName") || undefined,
+          paymentFor: (fd.get("paymentFor") as string).trim(),
+          payeeName: (fd.get("payeeName") as string)?.trim() || undefined,
           proofBase64,
           proofFileName: file.name,
           proofMimeType: file.type || "application/octet-stream",
@@ -191,7 +202,12 @@ export function MembershipForms({
             {needsOrg && (
               <div>
                 <label className="label">Organization name</label>
-                <input name="orgName" className="input-field" required />
+                <input 
+                  name="orgName" 
+                  className="input-field" 
+                  required 
+                  maxLength={150} // FIX: Bound string depth
+                />
               </div>
             )}
             <button type="submit" className="btn-primary w-full" disabled={applyLoading}>
@@ -247,6 +263,7 @@ export function MembershipForms({
                 placeholder="Transaction #"
                 className="input-field"
                 required
+                maxLength={50} // FIX: Matches backend optimization max check
               />
               <input
                 name="amount"
@@ -263,13 +280,19 @@ export function MembershipForms({
                 placeholder="Payment for"
                 className="input-field"
                 required
+                maxLength={100} // FIX: Prevents large text buffer overruns
                 defaultValue={
                   selectedMembership
                     ? MEMBERSHIP_CERT_LABELS[selectedMembership.type]
                     : undefined
                 }
               />
-              <input name="payeeName" placeholder="Payee name (OR)" className="input-field" />
+              <input 
+                name="payeeName" 
+                placeholder="Payee name (OR)" 
+                className="input-field" 
+                maxLength={100} // FIX: Structural string constraint
+              />
               <label className="flex items-center gap-2 text-sm">
                 <input name="isRenewal" type="checkbox" />
                 This is a renewal payment

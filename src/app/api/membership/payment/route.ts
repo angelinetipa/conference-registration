@@ -4,17 +4,21 @@ import { getSession } from "@/lib/auth";
 import { formatApiError, parseProofBase64, parseTransactionDate } from "@/lib/payment";
 import { prisma } from "@/lib/prisma";
 
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "application/pdf"];
+
 const schema = z.object({
-  membershipId: z.string().min(1),
+  membershipId: z.string().min(1).max(50),
   method: z.enum(["BANK", "EWALLET"]),
-  transactionDate: z.string().min(1),
-  transactionNo: z.string().min(3),
+  transactionDate: z.string().min(1).max(50),
+  transactionNo: z.string().min(3).max(50),
   amount: z.coerce.number().positive(),
-  paymentFor: z.string().min(3),
-  payeeName: z.string().optional(),
+  paymentFor: z.string().min(3).max(100),
+  payeeName: z.string().max(100).optional(),
   proofBase64: z.string().min(1),
-  proofFileName: z.string().min(1),
-  proofMimeType: z.string().min(1),
+  proofFileName: z.string().min(1).max(255),
+  proofMimeType: z.string().refine((val) => ALLOWED_MIME_TYPES.includes(val), {
+    message: "Invalid file type. Only JPG, PNG, or PDF are allowed as proof.",
+  }),
   isRenewal: z.boolean().optional(),
 });
 

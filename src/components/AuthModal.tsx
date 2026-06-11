@@ -23,6 +23,21 @@ export function AuthModal({ initialMode = "signin" }: { initialMode?: Mode }) {
     setError("");
     setLoading(true);
     const fd = new FormData(e.currentTarget);
+    
+    // Client-side phone validation before sending data to backend
+    if (mode === "signup") {
+      const phone = fd.get("phone") as string;
+      if (phone) {
+        // Regex validation: Allows standard PH mobile formats: 09171234567, +639171234567, or 639171234567
+        const phPhoneRegex = /^(09|\+639|639)\d{9}$/;
+        if (!phPhoneRegex.test(phone.replace(/\s+/g, ""))) {
+          setError("Invalid phone number format. Please use 09XXXXXXXXX or +639XXXXXXXXX.");
+          setLoading(false);
+          return;
+        }
+      }
+    }
+
     const endpoint = mode === "signin" ? "/api/auth/login" : "/api/auth/register";
 
     try {
@@ -91,7 +106,7 @@ export function AuthModal({ initialMode = "signin" }: { initialMode?: Mode }) {
           <div className="mb-8 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
             <button
               type="button"
-              onClick={() => setMode("signin")}
+              onClick={() => { setMode("signin"); setError(""); }}
               className={`rounded-xl px-4 py-3 text-sm font-black transition ${
                 mode === "signin"
                   ? "bg-white text-indigo-600 shadow-sm"
@@ -102,7 +117,7 @@ export function AuthModal({ initialMode = "signin" }: { initialMode?: Mode }) {
             </button>
             <button
               type="button"
-              onClick={() => setMode("signup")}
+              onClick={() => { setMode("signup"); setError(""); }}
               className={`rounded-xl px-4 py-3 text-sm font-black transition ${
                 mode === "signup"
                   ? "bg-white text-indigo-600 shadow-sm"
@@ -145,7 +160,14 @@ export function AuthModal({ initialMode = "signin" }: { initialMode?: Mode }) {
                 <label className="label" htmlFor="name">
                   Full name
                 </label>
-                <input id="name" name="name" className="input-field" required placeholder="Juan Dela Cruz" />
+                <input 
+                  id="name" 
+                  name="name" 
+                  className="input-field" 
+                  required 
+                  maxLength={100} // FIX: Prevent database text-bloat
+                  placeholder="Juan Dela Cruz" 
+                />
               </div>
             )}
 
@@ -159,6 +181,7 @@ export function AuthModal({ initialMode = "signin" }: { initialMode?: Mode }) {
                 type="email"
                 className="input-field"
                 required
+                maxLength={150} // FIX: Prevent database text-bloat
                 placeholder="you@university.edu"
               />
             </div>
@@ -173,7 +196,8 @@ export function AuthModal({ initialMode = "signin" }: { initialMode?: Mode }) {
                 type="password"
                 className="input-field"
                 required
-                minLength={8}
+                minLength={8}   // Maintained for sign-in and sign-up uniformity
+                maxLength={72}  // FIX: Safety limit for standard hashing frameworks (Bcrypt maxes out at 72)
                 placeholder="Minimum 8 characters"
               />
             </div>
@@ -188,6 +212,7 @@ export function AuthModal({ initialMode = "signin" }: { initialMode?: Mode }) {
                     id="organization"
                     name="organization"
                     className="input-field"
+                    maxLength={150} // FIX: Prevent database text-bloat
                     placeholder="University / Company"
                   />
                 </div>
@@ -195,7 +220,13 @@ export function AuthModal({ initialMode = "signin" }: { initialMode?: Mode }) {
                   <label className="label" htmlFor="phone">
                     Phone
                   </label>
-                  <input id="phone" name="phone" className="input-field" placeholder="+63..." />
+                  <input 
+                    id="phone" 
+                    name="phone" 
+                    className="input-field" 
+                    maxLength={13} // FIX: Maximum length for standard "+639171234567"
+                    placeholder="09171234567" 
+                  />
                 </div>
               </div>
             )}
