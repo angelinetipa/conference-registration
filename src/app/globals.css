@@ -268,16 +268,16 @@ html {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 0.85rem;
-  background: rgba(99, 102, 241, 0.18);
-  color: #c7d2fe;
+  background: rgba(99, 102, 241, 1);
+  color: #ffffff;
   font-weight: 900;
 }
 
 .workflow-badge {
   border-radius: 999px;
-  background: rgba(34, 211, 238, 0.12);
+  background: rgba(34, 211, 238, 0.28);
   padding: 0.22rem 0.55rem;
-  color: #a5f3fc;
+  color: #164e63;
   font-size: 0.68rem;
   font-weight: 900;
 }
@@ -478,9 +478,9 @@ html {
 }
 
 .contact-icon-indigo {
-  border: 1px solid rgba(129, 140, 248, 0.46);
-  background: rgba(99, 102, 241, 0.12);
-  color: #c7d2fe;
+  border: 1px solid rgba(99, 102, 241, 0.6);
+  background: rgba(99, 102, 241, 1);
+  color: #ffffff;
 }
 
 .contact-icon-pink {
