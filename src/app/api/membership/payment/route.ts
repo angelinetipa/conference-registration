@@ -37,12 +37,32 @@ export async function POST(req: Request) {
       body.proofFileName,
     );
     const transactionDate = parseTransactionDate(body.transactionDate);
+    const transactionNo = body.transactionNo.trim();
+
+    const duplicateMembershipTransaction = await prisma.membershipPayment.findFirst({
+      where: {
+        transactionNo: { equals: transactionNo, mode: "insensitive" },
+        NOT: { membershipId: membership.id, status: "PENDING" },
+      },
+      select: { id: true },
+    });
+    const duplicateEventTransaction = await prisma.paymentSubmission.findFirst({
+      where: { transactionNo: { equals: transactionNo, mode: "insensitive" } },
+      select: { id: true },
+    });
+
+    if (duplicateMembershipTransaction || duplicateEventTransaction) {
+      return NextResponse.json(
+        { error: "This transaction number has already been submitted." },
+        { status: 409 },
+      );
+    }
 
     const paymentData = {
       method: body.method,
       status: "PENDING" as const,
       transactionDate,
-      transactionNo: body.transactionNo.trim(),
+      transactionNo,
       amount: body.amount,
       paymentFor: body.paymentFor.trim(),
       payeeName: body.payeeName?.trim() || null,

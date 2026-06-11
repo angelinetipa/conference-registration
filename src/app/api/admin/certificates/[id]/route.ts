@@ -16,17 +16,14 @@ export async function PATCH(
     const { id } = await params;
     const body = schema.parse(await req.json());
 
-    const statusMap = {
-      approve: "APPROVED" as const,
-      issue: "ISSUED" as const,
-      reject: "REJECTED" as const,
-    };
+    const approvedAt = new Date();
+    const status = body.action === "reject" ? "REJECTED" : "ISSUED";
 
     const cert = await prisma.eventCertificateRequest.update({
       where: { id },
       data: {
-        status: statusMap[body.action],
-        issuedAt: body.action === "issue" ? new Date() : undefined,
+        status,
+        issuedAt: status === "ISSUED" ? approvedAt : null,
       },
     });
     return NextResponse.json({ certificate: cert });

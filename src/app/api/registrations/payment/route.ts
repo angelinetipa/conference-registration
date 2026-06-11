@@ -52,6 +52,23 @@ export async function POST(req: Request) {
       );
     }
 
+    const transactionNo = body.transactionNo.trim();
+    const duplicateTransaction = await prisma.paymentSubmission.findFirst({
+      where: { transactionNo: { equals: transactionNo, mode: "insensitive" } },
+      select: { id: true },
+    });
+    const duplicateMembershipTransaction = await prisma.membershipPayment.findFirst({
+      where: { transactionNo: { equals: transactionNo, mode: "insensitive" } },
+      select: { id: true },
+    });
+
+    if (duplicateTransaction || duplicateMembershipTransaction) {
+      return NextResponse.json(
+        { error: "This transaction number has already been submitted." },
+        { status: 409 },
+      );
+    }
+
     const { proofData, proofMimeType, proofFileName } = parseProofBase64(
       body.proofBase64,
       body.proofMimeType,
@@ -83,7 +100,7 @@ export async function POST(req: Request) {
           method: body.method,
           status: "PENDING",
           transactionDate,
-          transactionNo: body.transactionNo.trim(),
+          transactionNo,
           amount: body.amount,
           paymentFor: body.paymentFor.trim(),
           payeeName: body.payeeName?.trim() || null,

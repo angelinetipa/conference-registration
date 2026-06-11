@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { EVENT_CERT_LABELS } from "@/lib/constants";
 import { StatusBadge } from "@/components/StatusBadge";
 
@@ -58,6 +59,8 @@ export function AdminPanel({
 }) {
   const [msg, setMsg] = useState("");
   const [view, setView] = useState<AdminView>(null);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const router = useRouter();
 
   const eventPending = eventPayments.filter((payment) => payment.status === "PENDING");
   const eventApproved = eventPayments.filter((payment) => payment.status === "APPROVED");
@@ -81,33 +84,47 @@ export function AdminPanel({
     action: "approve" | "reject",
     kind: "event" | "membership",
   ) {
-    const res = await fetch(`/api/admin/payments/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, kind }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setMsg(data.error ?? `Failed to ${action} payment`);
-    } else {
-      setMsg(`${kind} payment ${action}d.`);
-      window.location.reload();
+    const actionKey = `${kind}-${id}-${action}`;
+    setPendingAction(actionKey);
+    setMsg("");
+    try {
+      const res = await fetch(`/api/admin/payments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, kind }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMsg(data.error ?? `Failed to ${action} payment`);
+      } else {
+        setMsg(`${kind} payment ${action}d.`);
+        router.refresh();
+      }
+    } finally {
+      setPendingAction(null);
     }
   }
 
-  async function reviewCert(id: string, action: "approve" | "issue" | "reject") {
-    const res = await fetch(`/api/admin/certificates/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setMsg(data.error ?? "Certificate update failed.");
-      return;
+  async function reviewCert(id: string, action: "approve" | "reject") {
+    const actionKey = `certificate-${id}-${action}`;
+    setPendingAction(actionKey);
+    setMsg("");
+    try {
+      const res = await fetch(`/api/admin/certificates/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMsg(data.error ?? "Certificate update failed.");
+        return;
+      }
+      setMsg(action === "approve" ? "Certificate approved and issued." : "Certificate rejected.");
+      router.refresh();
+    } finally {
+      setPendingAction(null);
     }
-    setMsg(`Certificate ${action}d.`);
-    window.location.reload();
   }
 
   return (
@@ -153,26 +170,26 @@ export function AdminPanel({
 
       {view === "event-payments" && (
         <div className="space-y-6">
-          <PaymentGroup title="Pending event payments" payments={eventPending} kind="event" onReview={reviewPayment} />
-          <PaymentGroup title="Approved event payments" payments={eventApproved} kind="event" onReview={reviewPayment} />
-          <PaymentGroup title="Rejected event payments" payments={eventRejected} kind="event" onReview={reviewPayment} />
+          <PaymentGroup title="Pending event payments" payments={eventPending} kind="event" onReview={reviewPayment} pendingAction={pendingAction} />
+          <PaymentGroup title="Approved event payments" payments={eventApproved} kind="event" onReview={reviewPayment} pendingAction={pendingAction} />
+          <PaymentGroup title="Rejected event payments" payments={eventRejected} kind="event" onReview={reviewPayment} pendingAction={pendingAction} />
         </div>
       )}
 
       {view === "membership-payments" && (
         <div className="space-y-6">
-          <PaymentGroup title="Pending membership payments" payments={membershipPending} kind="membership" onReview={reviewPayment} />
-          <PaymentGroup title="Approved membership payments" payments={membershipApproved} kind="membership" onReview={reviewPayment} />
-          <PaymentGroup title="Rejected membership payments" payments={membershipRejected} kind="membership" onReview={reviewPayment} />
+          <PaymentGroup title="Pending membership payments" payments={membershipPending} kind="membership" onReview={reviewPayment} pendingAction={pendingAction} />
+          <PaymentGroup title="Approved membership payments" payments={membershipApproved} kind="membership" onReview={reviewPayment} pendingAction={pendingAction} />
+          <PaymentGroup title="Rejected membership payments" payments={membershipRejected} kind="membership" onReview={reviewPayment} pendingAction={pendingAction} />
         </div>
       )}
 
       {view === "certificates" && (
         <div className="space-y-6">
-          <CertificateGroup title="Pending certificates" certificates={groupedCertificates.pending} onReview={reviewCert} />
-          <CertificateGroup title="Approved certificates" certificates={groupedCertificates.approved} onReview={reviewCert} />
-          <CertificateGroup title="Issued certificates" certificates={groupedCertificates.issued} onReview={reviewCert} />
-          <CertificateGroup title="Rejected certificates" certificates={groupedCertificates.rejected} onReview={reviewCert} />
+          <CertificateGroup title="Pending certificates" certificates={groupedCertificates.pending} onReview={reviewCert} pendingAction={pendingAction} />
+          <CertificateGroup title="Approved certificates" certificates={groupedCertificates.approved} onReview={reviewCert} pendingAction={pendingAction} />
+          <CertificateGroup title="Issued certificates" certificates={groupedCertificates.issued} onReview={reviewCert} pendingAction={pendingAction} />
+          <CertificateGroup title="Rejected certificates" certificates={groupedCertificates.rejected} onReview={reviewCert} pendingAction={pendingAction} />
         </div>
       )}
     </div>
@@ -207,11 +224,13 @@ function PaymentGroup({
   payments,
   kind,
   onReview,
+  pendingAction,
 }: {
   title: string;
   payments: Array<EventPayment | MemPayment>;
   kind: "event" | "membership";
   onReview: (id: string, action: "approve" | "reject", kind: "event" | "membership") => void;
+  pendingAction: string | null;
 }) {
   return (
     <section className="dashboard-card p-5 md:p-6">
@@ -255,11 +274,21 @@ function PaymentGroup({
                       </a>
                       {payment.status === "PENDING" && (
                         <>
-                          <button type="button" className="btn-primary px-3 py-2 text-xs" onClick={() => onReview(payment.id, "approve", kind)}>
-                            Approve
+                          <button
+                            type="button"
+                            className="btn-primary px-3 py-2 text-xs"
+                            disabled={pendingAction !== null}
+                            onClick={() => onReview(payment.id, "approve", kind)}
+                          >
+                            {pendingAction === `${kind}-${payment.id}-approve` ? "Approving..." : "Approve"}
                           </button>
-                          <button type="button" className="rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-600" onClick={() => onReview(payment.id, "reject", kind)}>
-                            Reject
+                          <button
+                            type="button"
+                            className="rounded-xl bg-red-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-60"
+                            disabled={pendingAction !== null}
+                            onClick={() => onReview(payment.id, "reject", kind)}
+                          >
+                            {pendingAction === `${kind}-${payment.id}-reject` ? "Rejecting..." : "Reject"}
                           </button>
                         </>
                       )}
@@ -280,10 +309,12 @@ function CertificateGroup({
   title,
   certificates,
   onReview,
+  pendingAction,
 }: {
   title: string;
   certificates: Cert[];
-  onReview: (id: string, action: "approve" | "issue" | "reject") => void;
+  onReview: (id: string, action: "approve" | "reject") => void;
+  pendingAction: string | null;
 }) {
   return (
     <section className="dashboard-card p-5 md:p-6">
@@ -305,20 +336,25 @@ function CertificateGroup({
               <p>Issued: {formatDate(certificate.issuedAt)}</p>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              {certificate.status === "PENDING" && (
+              {(certificate.status === "PENDING" || certificate.status === "APPROVED") && (
                 <>
-                  <button type="button" className="btn-primary px-3 py-2 text-xs" onClick={() => onReview(certificate.id, "approve")}>
-                    Approve
+                  <button
+                    type="button"
+                    className="btn-primary px-3 py-2 text-xs"
+                    disabled={pendingAction !== null}
+                    onClick={() => onReview(certificate.id, "approve")}
+                  >
+                    {pendingAction === `certificate-${certificate.id}-approve` ? "Approving..." : "Approve"}
                   </button>
-                  <button type="button" className="rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-600" onClick={() => onReview(certificate.id, "reject")}>
-                    Reject
+                  <button
+                    type="button"
+                    className="rounded-xl bg-red-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-60"
+                    disabled={pendingAction !== null}
+                    onClick={() => onReview(certificate.id, "reject")}
+                  >
+                    {pendingAction === `certificate-${certificate.id}-reject` ? "Rejecting..." : "Reject"}
                   </button>
                 </>
-              )}
-              {(certificate.status === "PENDING" || certificate.status === "APPROVED") && (
-                <button type="button" className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700" onClick={() => onReview(certificate.id, "issue")}>
-                  Issue certificate
-                </button>
               )}
               {certificate.status === "ISSUED" && (
                 <a

@@ -28,15 +28,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Recognition certificate requires role" }, { status: 400 });
     }
 
+    const existing = await prisma.eventCertificateRequest.findFirst({
+      where: {
+        userId: session.id,
+        type: body.type,
+        eventId: body.eventId ?? null,
+        recipientName: { equals: body.recipientName.trim(), mode: "insensitive" },
+        role: body.role
+          ? { equals: body.role.trim(), mode: "insensitive" }
+          : null,
+        paperTitle: body.paperTitle
+          ? { equals: body.paperTitle.trim(), mode: "insensitive" }
+          : null,
+        presenterName: body.presenterName
+          ? { equals: body.presenterName.trim(), mode: "insensitive" }
+          : null,
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "You already submitted this certificate request." },
+        { status: 409 },
+      );
+    }
+
     const cert = await prisma.eventCertificateRequest.create({
       data: {
         userId: session.id,
         eventId: body.eventId,
         type: body.type,
-        recipientName: body.recipientName,
-        role: body.role,
-        paperTitle: body.paperTitle,
-        presenterName: body.presenterName,
+        recipientName: body.recipientName.trim(),
+        role: body.role?.trim() || null,
+        paperTitle: body.paperTitle?.trim() || null,
+        presenterName: body.presenterName?.trim() || null,
       },
     });
     return NextResponse.json({ certificate: cert });
