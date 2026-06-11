@@ -157,7 +157,7 @@ export function EventRegistrationForms({ events }: { events: Event[] }) {
       )}
 
       <div className="grid lg:grid-cols-2 gap-8">
-        <section className="p-6 bg-white rounded-2xl border border-slate-200">
+        <section className="p-6 bg-white rounded-2xl border border-slate-200 self-start">
           <h2 className="text-lg font-bold mb-1">A. Early registration</h2>
           <p className="text-sm text-slate-500 mb-4">Instant unique QR per participant</p>
           <form onSubmit={submitEarly} className="space-y-3">
@@ -201,7 +201,7 @@ export function EventRegistrationForms({ events }: { events: Event[] }) {
             <div>
               <label className="label">Upload proof (image/PDF, max 5MB)</label>
               <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-indigo-300 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-600 hover:bg-indigo-100 transition">
-                Choose file to upload
+              Choose file to upload
                 <input
                   ref={proofRef}
                   name="proof"

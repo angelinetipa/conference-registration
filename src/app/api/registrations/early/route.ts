@@ -65,6 +65,9 @@ export async function POST(req: Request) {
       verifyUrl: buildVerifyUrl(reg.qrCode),
     });
   } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: "Please fill in all required fields correctly." }, { status: 400 });
+    }
     const msg = e instanceof Error ? e.message : "Registration failed";
     return NextResponse.json({ error: msg }, { status: 400 });
   }
